@@ -2483,6 +2483,7 @@ namespace bgfx { namespace gl
 
 		void createFrameBuffer(FrameBufferHandle _handle, uint8_t _num, const Attachment* _attachment) BX_OVERRIDE
 		{
+			m_glctx.makeCurrent(NULL);
 			m_frameBuffers[_handle.idx].create(_num, _attachment);
 		}
 
