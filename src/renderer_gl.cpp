@@ -2495,6 +2495,7 @@ namespace bgfx { namespace gl
 
 		void destroyFrameBuffer(FrameBufferHandle _handle) BX_OVERRIDE
 		{
+			m_vaoDefaultCache.invalidate();
 			uint16_t denseIdx = m_frameBuffers[_handle.idx].destroy();
 			if (UINT16_MAX != denseIdx)
 			{
@@ -2649,6 +2650,8 @@ namespace bgfx { namespace gl
 
 		void blitRender(TextVideoMemBlitter& _blitter, uint32_t _numIndices) BX_OVERRIDE
 		{
+			ensureDefaultVao();
+
 			const uint32_t numVertices = _numIndices*4/6;
 			if (0 < numVertices)
 			{
@@ -3456,6 +3459,20 @@ namespace bgfx { namespace gl
 			}
 		}
 
+		void ensureDefaultVao()
+		{
+			bx::HashMurmur2A murmur;
+			murmur.begin();
+			murmur.add(m_glctx.m_current);
+			uint32_t hash = murmur.end();
+			GLuint id = m_vaoDefaultCache.find(hash);
+			if (UINT32_MAX == id)
+			{
+				id = m_vaoDefaultCache.add(hash);
+			}
+			GL_CHECK(glBindVertexArray(id) );
+		}
+
 		void* m_renderdocdll;
 
 		uint16_t m_numWindows;
@@ -3475,6 +3492,7 @@ namespace bgfx { namespace gl
 		OcclusionQueryGL m_occlusionQuery;
 
 		VaoStateCache m_vaoStateCache;
+		VaoStateCache m_vaoDefaultCache;
 		SamplerStateCache m_samplerStateCache;
 
 		TextVideoMem m_textVideoMem;
@@ -7147,6 +7165,10 @@ namespace bgfx { namespace gl
 							currentState.m_indexBuffer.idx = invalidHandle;
 							bindAttribs = true;
 							currentVao = 0;
+						}
+						else
+						{
+							ensureDefaultVao();
 						}
 
 						bool diffStreamHandles = false;
